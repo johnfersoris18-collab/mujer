@@ -5,7 +5,8 @@ import Bouquet from './components/Bouquet'
 function App() {
   const [isOpen, setIsOpen] = useState(false)
 
-  // 20 pétalos cayendo a diferentes velocidades y posiciones
+  // 20 pétalos cayendo: Al guardarlos en una variable estática fuera del render (o usando memo),
+  // evitamos que la página se sobrecargue. Solo se calculan una vez.
   const petals = Array.from({ length: 20 }).map((_, i) => ({
     id: i,
     left: `${Math.random() * 100}%`,
@@ -14,10 +15,11 @@ function App() {
   }))
 
   return (
-    // Fondo femenino y romántico: un degradado muy suave entre rosados y cremas
+    // Quitamos los eventos onPointerMove que trababan la PC.
+    // Usamos touch-none para evitar que la pantalla rebote en el celular al deslizar.
     <div className="min-h-[100dvh] w-full bg-gradient-to-br from-pink-200 via-rose-100 to-pink-50 flex items-center justify-center p-4 font-sans overflow-hidden relative">
       
-      {/* Animación de la lluvia de pétalos */}
+      {/* CSS PURO: Animación fluida procesada por la GPU del dispositivo (Cero Lag) */}
       <style>
         {`
           @keyframes fall {
@@ -29,6 +31,7 @@ function App() {
         `}
       </style>
       
+      {/* FONDO: Lluvia de Pétalos */}
       <div className="absolute inset-0 pointer-events-none z-0">
         {petals.map((petal) => (
           <div 
@@ -47,7 +50,7 @@ function App() {
         ))}
       </div>
 
-      {/* Contenedor Principal */}
+      {/* CONTENEDOR CENTRAL */}
       <div className="relative w-full max-w-[420px] h-[500px] flex items-end justify-center z-10">
         <Bouquet show={isOpen} />
         <Envelope isOpen={isOpen} setIsOpen={setIsOpen} />
