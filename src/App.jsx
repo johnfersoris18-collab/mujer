@@ -1,42 +1,60 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Envelope from './components/Envelope'
 import Bouquet from './components/Bouquet'
+import Jardin from './components/Jardin'
+import Pareja from './components/Pareja'
 
 function App() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [phase, setPhase] = useState(0); 
 
-  // 20 pétalos cayendo: Al guardarlos en una variable estática fuera del render (o usando memo),
-  // evitamos que la página se sobrecargue. Solo se calculan una vez.
-  const petals = Array.from({ length: 20 }).map((_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    animationDelay: `${Math.random() * 5}s`,
-    animationDuration: `${6 + Math.random() * 6}s`,
-  }))
+  const handleOpen = () => {
+    if (phase === 0) {
+      setPhase(1); 
+      
+      setTimeout(() => {
+        setPhase(2);
+      }, 6000);
+
+      setTimeout(() => {
+        setPhase(3);
+      }, 7200);
+    } else if (phase === 3) {
+      setPhase(0); 
+    }
+  };
+
+  // El uso de useMemo es la clave: evita que los pétalos cambien de posición 
+  // bruscamente cuando cambias de fase.
+  const petals = useMemo(() => {
+    return Array.from({ length: 25 }).map((_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      animationDelay: `${Math.random() * 5}s`,
+      animationDuration: `${7 + Math.random() * 5}s`,
+    }));
+  }, []);
 
   return (
-    // Quitamos los eventos onPointerMove que trababan la PC.
-    // Usamos touch-none para evitar que la pantalla rebote en el celular al deslizar.
-    <div className="min-h-[100dvh] w-full bg-gradient-to-br from-pink-200 via-rose-100 to-pink-50 flex items-center justify-center p-4 font-sans overflow-hidden relative">
+    <div className="min-h-[100dvh] w-full bg-gradient-to-br from-pink-200 via-rose-100 to-pink-50 flex items-center justify-center p-4 font-sans overflow-hidden relative touch-none">
       
-      {/* CSS PURO: Animación fluida procesada por la GPU del dispositivo (Cero Lag) */}
       <style>
         {`
           @keyframes fall {
-            0% { transform: translateY(-10vh) rotate(0deg) scale(0.6); opacity: 0; }
+            0% { transform: translate(0, -10vh) rotate(0deg) scale(0.6); opacity: 0; }
             10% { opacity: 0.8; }
-            100% { transform: translateY(110vh) rotate(360deg) scale(1.2); opacity: 0; }
+            50% { transform: translate(20px, 50vh) rotate(180deg) scale(0.9); opacity: 0.8; }
+            100% { transform: translate(-15px, 110vh) rotate(360deg) scale(1.2); opacity: 0; }
           }
           .petal { animation: fall linear infinite; }
         `}
       </style>
       
-      {/* FONDO: Lluvia de Pétalos */}
+      {/* FONDO Lluvia de Pétalos */}
       <div className="absolute inset-0 pointer-events-none z-0">
         {petals.map((petal) => (
           <div 
             key={petal.id} 
-            className="absolute top-0 petal text-pink-500/50 drop-shadow-sm"
+            className="absolute top-0 petal text-pink-500/50"
             style={{ 
               left: petal.left, 
               animationDelay: petal.animationDelay,
@@ -52,14 +70,14 @@ function App() {
 
       {/* CONTENEDOR CENTRAL */}
       <div className="relative w-full max-w-[420px] h-[500px] flex items-end justify-center z-10">
-        <Bouquet show={isOpen} />
-        <Envelope isOpen={isOpen} setIsOpen={setIsOpen} />
+        <Bouquet phase={phase} />
+        <Jardin phase={phase} />
+        <Pareja phase={phase} />
+        <Envelope phase={phase} onOpen={handleOpen} />
       </div>
 
     </div>
   )
-  
 }
-
 
 export default App

@@ -1,32 +1,57 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 
-export default function Envelope({ isOpen, setIsOpen }) {
+export default function Envelope({ phase, onOpen }) {
   const [imageLoaded, setImageLoaded] = useState(false);
-  
-  // Texto completo y el estado del texto que se está escribiendo
-  const fullText = "Eres increíble, fuerte y me inspiras todos los días. Te Amo ❤️";
   const [typedText, setTypedText] = useState("");
+  const [textOpacity, setTextOpacity] = useState("opacity-100 scale-100");
+  
+  const typeTimerRef = useRef(null);
+  
+  const textPhase1 = "Eres increíble, fuerte y me inspiras todos los días. Te Amo ❤️";
+  const textPhase3 = "Gracias por ser la mujer que siempre espere.";
 
-  // Efecto Máquina de Escribir
   useEffect(() => {
-    if (isOpen) {
+    if (phase === 1) {
+      // Fase inicial: Escribe el primer texto
+      setTextOpacity("opacity-100 scale-100");
       let i = 0;
-      // Esperamos 1000ms a que la carta termine de subir para no causar lag
+      setTypedText(""); 
+      
       const delayTimer = setTimeout(() => {
-        const typeTimer = setInterval(() => {
-          setTypedText(fullText.slice(0, i + 1));
+        typeTimerRef.current = setInterval(() => {
+          setTypedText(textPhase1.slice(0, i + 1));
           i++;
-          if (i >= fullText.length) clearInterval(typeTimer);
-        }, 50); // Escribe 1 letra cada 50ms
-        return () => clearInterval(typeTimer);
-      }, 1000);
-      return () => clearTimeout(delayTimer);
-    } else {
-      setTypedText(""); // Se reinicia si se cierra
-    }
-  }, [isOpen]);
+          if (i >= textPhase1.length) clearInterval(typeTimerRef.current);
+        }, 50); 
+      }, 1000); 
+      return () => { clearTimeout(delayTimer); clearInterval(typeTimerRef.current); };
+      
+    } else if (phase === 3) {
+      // Fase 3: Transición suave (Fade out)
+      setTextOpacity("opacity-0 scale-95"); 
+      
+      const transitionTimer = setTimeout(() => {
+        setTypedText(""); // Limpia el texto oculto
+        setTextOpacity("opacity-100 scale-100"); // Vuelve a aparecer la caja
+        
+        // Empieza a escribir el nuevo texto
+        let i = 0;
+        typeTimerRef.current = setInterval(() => {
+          setTypedText(textPhase3.slice(0, i + 1));
+          i++;
+          if (i >= textPhase3.length) clearInterval(typeTimerRef.current);
+        }, 50);
+      }, 800); // Espera 800ms a que termine el fade out
 
-  // Matemáticas para el marco denso de la foto (60 margaritas)
+      return () => { clearTimeout(transitionTimer); clearInterval(typeTimerRef.current); };
+    } else if (phase === 0) {
+      setTypedText("");
+    }
+  }, [phase]);
+
+  const isOpen = phase > 0;
+  const currentFullText = phase >= 3 ? textPhase3 : textPhase1;
+
   const flowers = useMemo(() => {
     const list = [];
     const W = 320; const H = 192; 
@@ -40,48 +65,31 @@ export default function Envelope({ isOpen, setIsOpen }) {
   }, []);
 
   return (
-    <div className="absolute bottom-1 w-full max-w-[320px] flex justify-center cursor-pointer z-30 drop-shadow-2xl" onClick={() => setIsOpen(!isOpen)}>
-      
-      {/* PARTE TRASERA */}
+    <div className="absolute bottom-1 w-full max-w-[320px] flex justify-center cursor-pointer z-30 drop-shadow-2xl" onClick={onOpen}>
       <div className="absolute bottom-0 w-full h-48 bg-rose-900 rounded-xl z-10"></div>
 
-      {/* LA CARTA (Ahora con el texto tipeándose) */}
-      <div 
-        className={`absolute bg-slate-50 p-6 rounded-t-xl shadow-inner w-[90%] transition-all duration-1000 ease-in-out z-20 flex flex-col items-center text-center ${
+      {/* LA CARTA */}
+      <div className={`absolute bg-slate-50 p-6 rounded-t-xl shadow-inner w-[90%] transition-all duration-1000 ease-in-out z-20 flex flex-col items-center text-center ${
           isOpen ? 'bottom-16 opacity-100 h-60' : 'bottom-4 opacity-0 h-40'
         }`}
       >
-        <h1 className="text-xl font-bold text-rose-600 mt-2 mb-2">
-          ¡Feliz Día! ❤️
-        </h1>
-        {/* Usamos el typedText, y si está escribiendo agregamos un cursor palpitante "|" */}
-        <div className="text-slate-700 text-sm leading-relaxed mb-4 font-medium overflow-y-auto pr-1 custom-scrollbar min-h-[80px]">
+        <h1 className="text-xl font-bold text-rose-600 mt-2 mb-2">¡Feliz Día! ❤️</h1>
+        {/* Contenedor de texto con transición animada */}
+        <div className={`text-slate-700 text-sm leading-relaxed mb-4 font-medium min-h-[80px] transition-all duration-700 ${textOpacity}`}>
           {typedText}
-          {isOpen && typedText.length < fullText.length && (
+          {isOpen && typedText.length < currentFullText.length && (
             <span className="animate-pulse font-bold text-rose-400">|</span>
           )}
         </div>
       </div>
 
-      {/* PARTE FRONTAL DEL SOBRE Y LA FOTO */}
+      {/* FRONTAL */}
       <div className="relative w-full h-48 rounded-xl shadow-2xl z-30 flex items-center justify-center overflow-hidden bg-rose-600 border-t border-rose-500">
-        
         <div className={`absolute inset-0 w-full h-full transition-opacity duration-1000 z-40 ${isOpen && imageLoaded ? 'opacity-100' : 'opacity-0'}`}>
-          <img 
-            src="/foto.jpg" 
-            alt="Nosotros" 
-            onLoad={() => setImageLoaded(true)}
-            className="w-full h-full object-cover"
-          />
-
+          <img src="/foto.jpg" alt="Nosotros" onLoad={() => setImageLoaded(true)} className="w-full h-full object-cover" />
           <svg viewBox="0 0 320 192" className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
             <defs>
-              <style>
-                {`
-                  .flower-frame { opacity: 0; transform: scale(0); transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: center; }
-                  .flower-frame.show { opacity: 1; transform: scale(1); }
-                `}
-              </style>
+              <style>{`.flower-frame { opacity: 0; transform: scale(0); transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: center; } .flower-frame.show { opacity: 1; transform: scale(1); }`}</style>
               <g id="frame-daisy">
                 <g fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5">
                   <ellipse rx="3.5" ry="12" transform="rotate(0)"/>
@@ -92,7 +100,6 @@ export default function Envelope({ isOpen, setIsOpen }) {
                 <circle r="4" fill="#facc15"/>
               </g>
             </defs>
-
             {flowers.map((f, i) => (
               <g key={`f-${i}`} transform={`translate(${f.x}, ${f.y})`}>
                 <use href="#frame-daisy" transform="scale(1.5)" className={`flower-frame ${isOpen ? 'show' : ''}`} style={{ transitionDelay: `${0.5 + f.delay}s` }} />
@@ -100,15 +107,10 @@ export default function Envelope({ isOpen, setIsOpen }) {
             ))}
           </svg>
         </div>
-
-        {/* EL BOTÓN */}
         <div className={`relative z-50 transition-all duration-500 ${isOpen ? 'opacity-0 scale-50' : 'opacity-100 scale-100'}`}>
-          <div className="animate-pulse bg-white p-4 rounded-full shadow-lg text-2xl flex items-center justify-center text-rose-600">
-            ❤️
-          </div>
+          <div className="animate-pulse bg-white p-4 rounded-full shadow-lg text-2xl flex items-center justify-center text-rose-600">❤️</div>
           <p className="text-rose-100 text-xs text-center mt-2 font-semibold tracking-wide">Toca para abrir</p>
         </div>
-
       </div>
     </div>
   )
