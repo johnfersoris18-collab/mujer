@@ -58,7 +58,8 @@ function App() {
             style={{ 
               left: petal.left, 
               animationDelay: petal.animationDelay,
-              animationDuration: petal.animationDuration 
+              animationDuration: petal.animationDuration,
+              willChange: 'transform, opacity' /* <-- Optimización para móviles */
             }}
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
